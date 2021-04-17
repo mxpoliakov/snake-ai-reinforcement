@@ -67,15 +67,13 @@ def create_dqn_model(env, num_last_frames):
         16,
         kernel_size=(3, 3),
         strides=(1, 1),
-        data_format='channels_first',
-        input_shape=(num_last_frames, ) + env.observation_shape
+        input_shape=env.observation_shape + (num_last_frames, )
     ))
     model.add(Activation('relu'))
     model.add(Conv2D(
         32,
         kernel_size=(3, 3),
         strides=(1, 1),
-        data_format='channels_first'
     ))
     model.add(Activation('relu'))
 
@@ -100,7 +98,7 @@ def main():
     agent = DeepQNetworkAgent(
         model=model,
         memory_size=-1,
-        num_last_frames=model.input_shape[1]
+        num_last_frames=model.input_shape[-1]
     )
     agent.train(
         env,

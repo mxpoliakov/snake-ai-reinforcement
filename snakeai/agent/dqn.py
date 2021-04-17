@@ -17,12 +17,12 @@ class DeepQNetworkAgent(AgentBase):
             num_last_frames (int): the number of last frames the agent will consider.
             memory_size (int): memory size limit for experience replay (-1 for unlimited). 
         """
-        assert model.input_shape[1] == num_last_frames, 'Model input shape should be (num_frames, grid_size, grid_size)'
+        assert model.input_shape[-1] == num_last_frames, 'Model input shape should be (grid_size, grid_size, num_frames)'
         assert len(model.output_shape) == 2, 'Model output shape should be (num_samples, num_actions)'
 
         self.model = model
         self.num_last_frames = num_last_frames
-        self.memory = ExperienceReplay((num_last_frames,) + model.input_shape[-2:], model.output_shape[-1], memory_size)
+        self.memory = ExperienceReplay(model.input_shape[1:], model.output_shape[-1], memory_size)
         self.frames = None
 
     def begin_episode(self):
@@ -45,7 +45,8 @@ class DeepQNetworkAgent(AgentBase):
         else:
             self.frames.append(frame)
             self.frames.popleft()
-        return np.expand_dims(self.frames, 0)
+        observations = np.expand_dims(self.frames, 0)
+        return np.reshape(observations, (-1, ) + self.model.input_shape[1:])
 
     def train(self, env, num_episodes=1000, batch_size=50, discount_factor=0.9, checkpoint_freq=None,
               exploration_range=(1.0, 0.1), exploration_phase_size=0.5):
@@ -84,7 +85,6 @@ class DeepQNetworkAgent(AgentBase):
 
             # Observe the initial state.
             state = self.get_last_frames(timestep.observation)
-
             while not game_over:
                 if np.random.random() < exploration_rate:
                     # Explore: take a random action.
