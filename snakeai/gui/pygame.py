@@ -2,7 +2,7 @@ import numpy as np
 import pygame
 
 from snakeai.agent import HumanAgent
-from snakeai.gameplay.entities import (CellType, SnakeAction, ALL_SNAKE_DIRECTIONS)
+from snakeai.gameplay.entities import CellType, SnakeAction, ALL_SNAKE_DIRECTIONS
 
 
 class PyGameGUI:
@@ -13,12 +13,7 @@ class PyGameGUI:
     HUMAN_TIMESTEP_DELAY = 500
     CELL_SIZE = 20
 
-    SNAKE_CONTROL_KEYS = [
-        pygame.K_UP,
-        pygame.K_LEFT,
-        pygame.K_DOWN,
-        pygame.K_RIGHT
-    ]
+    SNAKE_CONTROL_KEYS = [pygame.K_UP, pygame.K_LEFT, pygame.K_DOWN, pygame.K_RIGHT]
 
     def __init__(self):
         pygame.init()
@@ -31,10 +26,13 @@ class PyGameGUI:
     def load_environment(self, environment):
         """ Load the RL environment into the GUI. """
         self.env = environment
-        screen_size = (self.env.field.size * self.CELL_SIZE, self.env.field.size * self.CELL_SIZE)
+        screen_size = (
+            self.env.field.size * self.CELL_SIZE,
+            self.env.field.size * self.CELL_SIZE,
+        )
         self.screen = pygame.display.set_mode(screen_size)
         self.screen.fill(Colors.SCREEN_BACKGROUND)
-        pygame.display.set_caption('Snake')
+        pygame.display.set_caption("Snake")
 
     def load_agent(self, agent):
         """ Load the RL agent into the GUI. """
@@ -55,7 +53,9 @@ class PyGameGUI:
             pygame.draw.rect(self.screen, color, cell_coords, 1)
 
             internal_padding = self.CELL_SIZE // 6 * 2
-            internal_square_coords = cell_coords.inflate((-internal_padding, -internal_padding))
+            internal_square_coords = cell_coords.inflate(
+                (-internal_padding, -internal_padding)
+            )
             pygame.draw.rect(self.screen, color, internal_square_coords)
 
     def render(self):
@@ -98,7 +98,9 @@ class PyGameGUI:
         self.agent.begin_episode()
 
         is_human_agent = isinstance(self.agent, HumanAgent)
-        timestep_delay = self.HUMAN_TIMESTEP_DELAY if is_human_agent else self.AI_TIMESTEP_DELAY
+        timestep_delay = (
+            self.HUMAN_TIMESTEP_DELAY if is_human_agent else self.AI_TIMESTEP_DELAY
+        )
 
         # Main game loop.
         running = True
@@ -118,13 +120,17 @@ class PyGameGUI:
 
             # Update game state.
             timestep_timed_out = self.timestep_watch.time() >= timestep_delay
-            human_made_move = is_human_agent and action != SnakeAction.MAINTAIN_DIRECTION
+            human_made_move = (
+                is_human_agent and action != SnakeAction.MAINTAIN_DIRECTION
+            )
 
             if timestep_timed_out or human_made_move:
                 self.timestep_watch.reset()
 
                 if not is_human_agent:
-                    action = self.agent.act(timestep_result.observation, timestep_result.reward)
+                    action = self.agent.act(
+                        timestep_result.observation, timestep_result.reward
+                    )
 
                 self.env.choose_action(action)
                 timestep_result = self.env.timestep()
@@ -136,7 +142,7 @@ class PyGameGUI:
             # Render.
             self.render()
             score = self.env.snake.length - self.env.initial_snake_length
-            pygame.display.set_caption(f'Snake  [Score: {score:02d}]')
+            pygame.display.set_caption(f"Snake  [Score: {score:02d}]")
             pygame.display.update()
             self.fps_clock.tick(self.FPS_LIMIT)
 
@@ -169,4 +175,5 @@ class Colors:
 
 class QuitRequestedError(RuntimeError):
     """ Gets raised whenever the user wants to quit the game. """
+
     pass

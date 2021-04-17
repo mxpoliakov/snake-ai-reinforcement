@@ -8,6 +8,6 @@ class HelpOnFailArgumentParser(argparse.ArgumentParser):
     """
 
     def error(self, message):
-        sys.stderr.write('Error: %s\n\n' % message)
+        sys.stderr.write("Error: %s\n\n" % message)
         self.print_help()
         sys.exit(2)

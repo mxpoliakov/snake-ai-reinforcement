@@ -10,7 +10,7 @@ class ExperienceReplay(object):
     def __init__(self, input_shape, num_actions, memory_size=100):
         """
         Create a new instance of experience replay memory.
-        
+
         Args:
             input_shape: the shape of the agent state.
             num_actions: the number of actions allowed in the environment.
@@ -28,21 +28,23 @@ class ExperienceReplay(object):
     def remember(self, state, action, reward, state_next, is_episode_end):
         """
         Store a new piece of experience into the replay memory.
-        
+
         Args:
             state: state observed at the previous step.
             action: action taken at the previous step.
             reward: reward received at the beginning of the current step.
-            state_next: state observed at the current step. 
+            state_next: state observed at the current step.
             is_episode_end: whether the episode has ended with the current step.
         """
-        memory_item = np.concatenate([
-            state.flatten(),
-            np.array(action).flatten(),
-            np.array(reward).flatten(),
-            state_next.flatten(),
-            1 * np.array(is_episode_end).flatten()
-        ])
+        memory_item = np.concatenate(
+            [
+                state.flatten(),
+                np.array(action).flatten(),
+                np.array(reward).flatten(),
+                state_next.flatten(),
+                1 * np.array(is_episode_end).flatten(),
+            ]
+        )
         self.memory.append(memory_item)
         if 0 < self.memory_size < len(self.memory):
             self.memory.popleft()
@@ -58,23 +60,33 @@ class ExperienceReplay(object):
         states = experience[:, 0:input_dim]
         actions = experience[:, input_dim]
         rewards = experience[:, input_dim + 1]
-        states_next = experience[:, input_dim + 2:2 * input_dim + 2]
+        states_next = experience[:, input_dim + 2 : 2 * input_dim + 2]
         episode_ends = experience[:, 2 * input_dim + 2]
 
         # Reshape to match the batch structure.
-        states = states.reshape((batch_size, ) + self.input_shape)
-        actions = np.cast['int'](actions)
-        rewards = rewards.repeat(self.num_actions).reshape((batch_size, self.num_actions))
-        states_next = states_next.reshape((batch_size, ) + self.input_shape)
-        episode_ends = episode_ends.repeat(self.num_actions).reshape((batch_size, self.num_actions))
+        states = states.reshape((batch_size,) + self.input_shape)
+        actions = np.cast["int"](actions)
+        rewards = rewards.repeat(self.num_actions).reshape(
+            (batch_size, self.num_actions)
+        )
+        states_next = states_next.reshape((batch_size,) + self.input_shape)
+        episode_ends = episode_ends.repeat(self.num_actions).reshape(
+            (batch_size, self.num_actions)
+        )
 
         # Predict future state-action values.
         X = np.concatenate([states, states_next], axis=0)
         y = model.predict(X)
-        Q_next = np.max(y[batch_size:], axis=1).repeat(self.num_actions).reshape((batch_size, self.num_actions))
+        Q_next = (
+            np.max(y[batch_size:], axis=1)
+            .repeat(self.num_actions)
+            .reshape((batch_size, self.num_actions))
+        )
 
         delta = np.zeros((batch_size, self.num_actions))
         delta[np.arange(batch_size), actions] = 1
 
-        targets = (1 - delta) * y[:batch_size] + delta * (rewards + discount_factor * (1 - episode_ends) * Q_next)
+        targets = (1 - delta) * y[:batch_size] + delta * (
+            rewards + discount_factor * (1 - episode_ends) * Q_next
+        )
         return states, targets

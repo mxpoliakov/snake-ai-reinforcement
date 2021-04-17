@@ -10,7 +10,7 @@ class AgentBase(object):
         Choose the next action to take.
 
         Args:
-            observation: observable state for the current timestep. 
+            observation: observable state for the current timestep.
             reward: reward received at the beginning of the current timestep.
 
         Returns:

@@ -65,8 +65,16 @@ def test_grow_extends_head_in_current_direction():
     assert snake.head == (3, 8)
     assert snake.tail == (3, 7)
     assert list(snake.body) == [
-        (3, 8), (2, 8), (2, 7), (2, 6), (2, 5),
-        (2, 4), (3, 4), (3, 5), (3, 6), (3, 7),
+        (3, 8),
+        (2, 8),
+        (2, 7),
+        (2, 6),
+        (2, 5),
+        (2, 4),
+        (3, 4),
+        (3, 5),
+        (3, 6),
+        (3, 7),
     ]
 
 

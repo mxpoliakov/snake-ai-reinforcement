@@ -11,18 +11,24 @@ class DeepQNetworkAgent(AgentBase):
     def __init__(self, model, num_last_frames=4, memory_size=1000):
         """
         Create a new DQN-based agent.
-        
+
         Args:
             model: a compiled DQN model.
             num_last_frames (int): the number of last frames the agent will consider.
-            memory_size (int): memory size limit for experience replay (-1 for unlimited). 
+            memory_size (int): memory size limit for experience replay (-1 for unlimited).
         """
-        assert model.input_shape[-1] == num_last_frames, 'Model input shape should be (grid_size, grid_size, num_frames)'
-        assert len(model.output_shape) == 2, 'Model output shape should be (num_samples, num_actions)'
+        assert (
+            model.input_shape[-1] == num_last_frames
+        ), "Model input shape should be (grid_size, grid_size, num_frames)"
+        assert (
+            len(model.output_shape) == 2
+        ), "Model output shape should be (num_samples, num_actions)"
 
         self.model = model
         self.num_last_frames = num_last_frames
-        self.memory = ExperienceReplay(model.input_shape[1:], model.output_shape[-1], memory_size)
+        self.memory = ExperienceReplay(
+            model.input_shape[1:], model.output_shape[-1], memory_size
+        )
         self.frames = None
 
     def begin_episode(self):
@@ -32,9 +38,9 @@ class DeepQNetworkAgent(AgentBase):
     def get_last_frames(self, observation):
         """
         Get the pixels of the last `num_last_frames` observations, the current frame being the last.
-        
+
         Args:
-            observation: observation at the current timestep. 
+            observation: observation at the current timestep.
 
         Returns:
             Observations for the last `num_last_frames` frames.
@@ -46,13 +52,21 @@ class DeepQNetworkAgent(AgentBase):
             self.frames.append(frame)
             self.frames.popleft()
         observations = np.expand_dims(self.frames, 0)
-        return np.reshape(observations, (-1, ) + self.model.input_shape[1:])
+        return np.reshape(observations, (-1,) + self.model.input_shape[1:])
 
-    def train(self, env, num_episodes=1000, batch_size=50, discount_factor=0.9, checkpoint_freq=None,
-              exploration_range=(1.0, 0.1), exploration_phase_size=0.5):
+    def train(
+        self,
+        env,
+        num_episodes=1000,
+        batch_size=50,
+        discount_factor=0.9,
+        checkpoint_freq=None,
+        exploration_range=(1.0, 0.1),
+        exploration_phase_size=0.5,
+    ):
         """
         Train the agent to perform well in the given Snake environment.
-        
+
         Args:
             env:
                 an instance of Snake environment.
@@ -65,7 +79,7 @@ class DeepQNetworkAgent(AgentBase):
             checkpoint_freq (int):
                 the number of episodes after which a new model checkpoint will be created.
             exploration_range (tuple):
-                a (max, min) range specifying how the exploration rate should decay over time. 
+                a (max, min) range specifying how the exploration rate should decay over time.
             exploration_phase_size (float):
                 the percentage of the training process at which
                 the exploration rate should reach its minimum.
@@ -73,7 +87,9 @@ class DeepQNetworkAgent(AgentBase):
 
         # Calculate the constant exploration decay speed for each episode.
         max_exploration_rate, min_exploration_rate = exploration_range
-        exploration_decay = ((max_exploration_rate - min_exploration_rate) / (num_episodes * exploration_phase_size))
+        exploration_decay = (max_exploration_rate - min_exploration_rate) / (
+            num_episodes * exploration_phase_size
+        )
         exploration_rate = max_exploration_rate
 
         for episode in range(num_episodes):
@@ -110,7 +126,7 @@ class DeepQNetworkAgent(AgentBase):
                 batch = self.memory.get_batch(
                     model=self.model,
                     batch_size=batch_size,
-                    discount_factor=discount_factor
+                    discount_factor=discount_factor,
                 )
                 # Learn on the batch.
                 if batch:
@@ -118,26 +134,35 @@ class DeepQNetworkAgent(AgentBase):
                     loss += float(self.model.train_on_batch(inputs, targets))
 
             if checkpoint_freq and (episode % checkpoint_freq) == 0:
-                self.model.save(f'dqn-{episode:08d}.model')
+                self.model.save(f"dqn-{episode:08d}.model")
 
             if exploration_rate > min_exploration_rate:
                 exploration_rate -= exploration_decay
 
-            summary = 'Episode {:5d}/{:5d} | Loss {:8.4f} | Exploration {:.2f} | ' + \
-                      'Fruits {:2d} | Timesteps {:4d} | Total Reward {:4d}'
-            print(summary.format(
-                episode + 1, num_episodes, loss, exploration_rate,
-                env.stats.fruits_eaten, env.stats.timesteps_survived, env.stats.sum_episode_rewards,
-            ))
+            summary = (
+                "Episode {:5d}/{:5d} | Loss {:8.4f} | Exploration {:.2f} | "
+                + "Fruits {:2d} | Timesteps {:4d} | Total Reward {:4d}"
+            )
+            print(
+                summary.format(
+                    episode + 1,
+                    num_episodes,
+                    loss,
+                    exploration_rate,
+                    env.stats.fruits_eaten,
+                    env.stats.timesteps_survived,
+                    env.stats.sum_episode_rewards,
+                )
+            )
 
-        self.model.save('dqn-final.model')
+        self.model.save("dqn-final.model")
 
     def act(self, observation, reward):
         """
         Choose the next action to take.
-        
+
         Args:
-            observation: observable state for the current timestep. 
+            observation: observable state for the current timestep.
             reward: reward received at the beginning of the current timestep.
 
         Returns:

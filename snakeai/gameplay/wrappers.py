@@ -44,7 +44,7 @@ class OpenAIGymActionSpaceAdapter(object):
 def make_openai_gym_environment(config_filename):
     """
     Create an OpenAI Gym environment for the Snake game.
-    
+
     Args:
         config_filename: JSON config for the Snake game level.
 

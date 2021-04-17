@@ -6,7 +6,9 @@ from snakeai.gameplay.environment import Environment
 
 
 def get_env_config_file(name):
-    level_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'levels'))
+    level_dir = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), os.pardir, "levels")
+    )
     return os.path.join(level_dir, name) + ".json"
 
 
@@ -17,7 +19,7 @@ def load_env(name):
 
 
 def test_env_on_first_episode_has_consistent_initial_state():
-    env = load_env('10x10-blank')
+    env = load_env("10x10-blank")
     env.new_episode()
 
     assert env.field.size == 10
@@ -27,7 +29,7 @@ def test_env_on_first_episode_has_consistent_initial_state():
 
 
 def test_env_idle_run_reports_correct_timesteps():
-    env = load_env('10x10-blank')
+    env = load_env("10x10-blank")
 
     # This makes the fruit appear exactly 2 steps away from the snake,
     # and the next one appear far to the southwest.
@@ -58,7 +60,7 @@ def test_env_idle_run_reports_correct_timesteps():
 
     assert env.stats.sum_episode_rewards == 3
     assert env.stats.timesteps_survived == 4
-    assert env.stats.termination_reason == 'hit_wall'
+    assert env.stats.termination_reason == "hit_wall"
     assert env.stats.action_counter == {
         SnakeAction.MAINTAIN_DIRECTION: 4,
         SnakeAction.TURN_LEFT: 0,
@@ -67,7 +69,7 @@ def test_env_idle_run_reports_correct_timesteps():
 
 
 def test_env_bite_own_tail_reports_game_over():
-    env = load_env('10x10-blank')
+    env = load_env("10x10-blank")
 
     # Make 2 consecutive fruits appear directly on our path.
     env.seed(143)
@@ -109,7 +111,7 @@ def test_env_bite_own_tail_reports_game_over():
 
     assert env.stats.sum_episode_rewards == 8
     assert env.stats.timesteps_survived == 6
-    assert env.stats.termination_reason == 'hit_own_body'
+    assert env.stats.termination_reason == "hit_own_body"
     assert env.stats.action_counter == {
         SnakeAction.MAINTAIN_DIRECTION: 3,
         SnakeAction.TURN_LEFT: 0,
@@ -118,7 +120,7 @@ def test_env_bite_own_tail_reports_game_over():
 
 
 def test_env_timestep_limit_exceeded_fails_gracefully():
-    env = load_env('10x10-blank')
+    env = load_env("10x10-blank")
     env.new_episode()
 
     for i in range(env.max_step_limit - 1):
@@ -132,7 +134,7 @@ def test_env_timestep_limit_exceeded_fails_gracefully():
 
 
 def test_env_when_new_episode_starts_resets_previous_state():
-    env = load_env('10x10-blank')
+    env = load_env("10x10-blank")
     env.new_episode()
 
     for i in range(env.max_step_limit - 1):
@@ -142,7 +144,7 @@ def test_env_when_new_episode_starts_resets_previous_state():
     tsr = env.timestep()
     assert tsr.is_episode_end
     assert env.stats.timesteps_survived == env.max_step_limit
-    assert env.stats.termination_reason == 'timestep_limit_exceeded'
+    assert env.stats.termination_reason == "timestep_limit_exceeded"
 
     env.new_episode()
 

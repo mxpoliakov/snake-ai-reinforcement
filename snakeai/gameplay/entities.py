@@ -5,7 +5,7 @@ import numpy as np
 from collections import deque, namedtuple
 
 
-class Point(namedtuple('PointTuple', ['x', 'y'])):
+class Point(namedtuple("PointTuple", ["x", "y"])):
     """ Represents a 2D point with named axes. """
 
     def __add__(self, other):
@@ -65,16 +65,15 @@ class Snake(object):
     def __init__(self, start_coord, length=3):
         """
         Create a new snake.
-        
+
         Args:
-            start_coord: A point representing the initial position of the snake. 
+            start_coord: A point representing the initial position of the snake.
             length: An integer specifying the initial length of the snake.
         """
         # Place the snake vertically, heading north.
-        self.body = deque([
-            Point(start_coord.x, start_coord.y + i)
-            for i in range(length)
-        ])
+        self.body = deque(
+            [Point(start_coord.x, start_coord.y + i) for i in range(length)]
+        )
         self.direction = SnakeDirection.NORTH
         self.directions = ALL_SNAKE_DIRECTIONS
 
@@ -123,7 +122,7 @@ class Field(object):
     def __init__(self, level_map=None):
         """
         Create a new Snake field.
-        
+
         Args:
             level_map: a list of strings representing the field objects (1 string per row).
         """
@@ -131,11 +130,11 @@ class Field(object):
         self._cells = None
         self._empty_cells = set()
         self._level_map_to_cell_type = {
-            'S': CellType.SNAKE_HEAD,
-            's': CellType.SNAKE_BODY,
-            '#': CellType.WALL,
-            'O': CellType.FRUIT,
-            '.': CellType.EMPTY,
+            "S": CellType.SNAKE_HEAD,
+            "s": CellType.SNAKE_BODY,
+            "#": CellType.WALL,
+            "O": CellType.FRUIT,
+            ".": CellType.EMPTY,
         }
         self._cell_type_to_level_map = {
             cell_type: symbol
@@ -160,8 +159,8 @@ class Field(object):
                 self._empty_cells.remove(point)
 
     def __str__(self):
-        return '\n'.join(
-            ''.join(self._cell_type_to_level_map[cell] for cell in row)
+        return "\n".join(
+            "".join(self._cell_type_to_level_map[cell] for cell in row)
             for row in self._cells
         )
 
@@ -173,10 +172,12 @@ class Field(object):
     def create_level(self):
         """ Create a new field based on the level map. """
         try:
-            self._cells = np.array([
-                [self._level_map_to_cell_type[symbol] for symbol in line]
-                for line in self.level_map
-            ])
+            self._cells = np.array(
+                [
+                    [self._level_map_to_cell_type[symbol] for symbol in line]
+                    for line in self.level_map
+                ]
+            )
             self._empty_cells = {
                 Point(x, y)
                 for y in range(self.size)
@@ -192,7 +193,7 @@ class Field(object):
             for x in range(self.size):
                 if self[(x, y)] == CellType.SNAKE_HEAD:
                     return Point(x, y)
-        raise ValueError('Initial snake position not specified on the level map')
+        raise ValueError("Initial snake position not specified on the level map")
 
     def get_random_empty_cell(self):
         """ Get the coordinates of a random empty cell. """
@@ -207,13 +208,13 @@ class Field(object):
     def update_snake_footprint(self, old_head, old_tail, new_head):
         """
         Update field cells according to the new snake position.
-        
+
         Environment must be as fast as possible to speed up agent training.
         Therefore, we'll sacrifice some duplication of information between
         the snake body and the field just to execute timesteps faster.
-        
+
         Args:
-            old_head: position of the head before the move. 
+            old_head: position of the head before the move.
             old_tail: position of the tail before the move.
             new_head: position of the head after the move.
         """
@@ -224,5 +225,8 @@ class Field(object):
             self[old_tail] = CellType.EMPTY
 
         # Support the case when we're chasing own tail.
-        if self[new_head] not in (CellType.WALL, CellType.SNAKE_BODY) or new_head == old_tail:
+        if (
+            self[new_head] not in (CellType.WALL, CellType.SNAKE_BODY)
+            or new_head == old_tail
+        ):
             self[new_head] = CellType.SNAKE_HEAD

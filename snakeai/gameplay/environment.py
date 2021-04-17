@@ -17,20 +17,20 @@ class Environment(object):
     def __init__(self, config, verbose=1):
         """
         Create a new Snake RL environment.
-        
+
         Args:
-            config (dict): level configuration, typically found in JSON configs.  
+            config (dict): level configuration, typically found in JSON configs.
             verbose (int): verbosity level:
                 0 = do not write any debug information;
                 1 = write a CSV file containing the statistics for every episode;
                 2 = same as 1, but also write a full log file containing the state of each timestep.
         """
-        self.field = Field(level_map=config['field'])
+        self.field = Field(level_map=config["field"])
         self.snake = None
         self.fruit = None
-        self.initial_snake_length = config['initial_snake_length']
-        self.rewards = config['rewards']
-        self.max_step_limit = config.get('max_step_limit', 1000)
+        self.initial_snake_length = config["initial_snake_length"]
+        self.rewards = config["rewards"]
+        self.max_step_limit = config.get("max_step_limit", 1000)
         self.is_game_over = False
 
         self.timestep_index = 0
@@ -61,7 +61,9 @@ class Environment(object):
         self.stats.reset()
         self.timestep_index = 0
 
-        self.snake = Snake(self.field.find_snake_head(), length=self.initial_snake_length)
+        self.snake = Snake(
+            self.field.find_snake_head(), length=self.initial_snake_length
+        )
         self.field.place_snake(self.snake)
         self.generate_fruit()
         self.current_action = None
@@ -70,7 +72,7 @@ class Environment(object):
         result = TimestepResult(
             observation=self.get_observation(),
             reward=0,
-            is_episode_end=self.is_game_over
+            is_episode_end=self.is_game_over,
         )
 
         self.record_timestep_stats(result)
@@ -78,17 +80,17 @@ class Environment(object):
 
     def record_timestep_stats(self, result):
         """ Record environment statistics according to the verbosity level. """
-        timestamp = time.strftime('%Y%m%d-%H%M%S')
+        timestamp = time.strftime("%Y%m%d-%H%M%S")
 
         # Write CSV header for the stats file.
         if self.verbose >= 1 and self.stats_file is None:
-            self.stats_file = open(f'snake-env-{timestamp}.csv', 'w')
+            self.stats_file = open(f"snake-env-{timestamp}.csv", "w")
             stats_csv_header_line = self.stats.to_dataframe()[:0].to_csv(index=None)
-            print(stats_csv_header_line, file=self.stats_file, end='', flush=True)
+            print(stats_csv_header_line, file=self.stats_file, end="", flush=True)
 
         # Create a blank debug log file.
         if self.verbose >= 2 and self.debug_file is None:
-            self.debug_file = open(f'snake-env-{timestamp}.log', 'w')
+            self.debug_file = open(f"snake-env-{timestamp}.log", "w")
 
         self.stats.record_timestep(self.current_action, result)
         self.stats.timesteps_survived = self.timestep_index
@@ -99,8 +101,10 @@ class Environment(object):
         # Log episode stats if the appropriate verbosity level is set.
         if result.is_episode_end:
             if self.verbose >= 1:
-                stats_csv_line = self.stats.to_dataframe().to_csv(header=False, index=None)
-                print(stats_csv_line, file=self.stats_file, end='', flush=True)
+                stats_csv_line = self.stats.to_dataframe().to_csv(
+                    header=False, index=None
+                )
+                print(stats_csv_line, file=self.stats_file, end="", flush=True)
             if self.verbose >= 2:
                 print(self.stats, file=self.debug_file)
 
@@ -131,36 +135,36 @@ class Environment(object):
             self.snake.grow()
             self.generate_fruit()
             old_tail = None
-            reward += self.rewards['ate_fruit'] * self.snake.length
+            reward += self.rewards["ate_fruit"] * self.snake.length
             self.stats.fruits_eaten += 1
 
         # If not, just move forward.
         else:
             self.snake.move()
-            reward += self.rewards['timestep']
+            reward += self.rewards["timestep"]
 
         self.field.update_snake_footprint(old_head, old_tail, self.snake.head)
 
         # Hit a wall or own body?
         if not self.is_alive():
             if self.has_hit_wall():
-                self.stats.termination_reason = 'hit_wall'
+                self.stats.termination_reason = "hit_wall"
             if self.has_hit_own_body():
-                self.stats.termination_reason = 'hit_own_body'
+                self.stats.termination_reason = "hit_own_body"
 
             self.field[self.snake.head] = CellType.SNAKE_HEAD
             self.is_game_over = True
-            reward = self.rewards['died']
+            reward = self.rewards["died"]
 
         # Exceeded the limit of moves?
         if self.timestep_index >= self.max_step_limit:
             self.is_game_over = True
-            self.stats.termination_reason = 'timestep_limit_exceeded'
+            self.stats.termination_reason = "timestep_limit_exceeded"
 
         result = TimestepResult(
             observation=self.get_observation(),
             reward=reward,
-            is_episode_end=self.is_game_over
+            is_episode_end=self.is_game_over,
         )
 
         self.record_timestep_stats(result)
@@ -195,11 +199,10 @@ class TimestepResult(object):
         self.is_episode_end = is_episode_end
 
     def __str__(self):
-        field_map = '\n'.join([
-            ''.join(str(cell) for cell in row)
-            for row in self.observation
-        ])
-        return f'{field_map}\nR = {self.reward}   end={self.is_episode_end}\n'
+        field_map = "\n".join(
+            ["".join(str(cell) for cell in row) for row in self.observation]
+        )
+        return f"{field_map}\nR = {self.reward}   end={self.is_episode_end}\n"
 
 
 class EpisodeStatistics(object):
@@ -214,10 +217,7 @@ class EpisodeStatistics(object):
         self.sum_episode_rewards = 0
         self.fruits_eaten = 0
         self.termination_reason = None
-        self.action_counter = {
-            action: 0
-            for action in ALL_SNAKE_ACTIONS
-        }
+        self.action_counter = {action: 0 for action in ALL_SNAKE_ACTIONS}
 
     def record_timestep(self, action, result):
         """ Update the stats based on the current timestep results. """
@@ -228,16 +228,20 @@ class EpisodeStatistics(object):
     def flatten(self):
         """ Format all episode statistics as a flat object. """
         flat_stats = {
-            'timesteps_survived': self.timesteps_survived,
-            'sum_episode_rewards': self.sum_episode_rewards,
-            'mean_reward': self.sum_episode_rewards / self.timesteps_survived if self.timesteps_survived else None,
-            'fruits_eaten': self.fruits_eaten,
-            'termination_reason': self.termination_reason,
+            "timesteps_survived": self.timesteps_survived,
+            "sum_episode_rewards": self.sum_episode_rewards,
+            "mean_reward": self.sum_episode_rewards / self.timesteps_survived
+            if self.timesteps_survived
+            else None,
+            "fruits_eaten": self.fruits_eaten,
+            "termination_reason": self.termination_reason,
         }
-        flat_stats.update({
-            f'action_counter_{action}': self.action_counter.get(action, 0)
-            for action in ALL_SNAKE_ACTIONS
-        })
+        flat_stats.update(
+            {
+                f"action_counter_{action}": self.action_counter.get(action, 0)
+                for action in ALL_SNAKE_ACTIONS
+            }
+        )
         return flat_stats
 
     def to_dataframe(self):
