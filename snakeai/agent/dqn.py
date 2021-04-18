@@ -26,7 +26,7 @@ class DeepQNetworkAgent(AgentBase):
         """
         self.model = model
         self.loss_fn = nn.MSELoss()
-        self.optimizer = torch.optim.RMSprop(self.model.parameters())
+        self.optimizer = torch.optim.RMSprop(self.model.parameters(), lr=0.001)
 
         self.num_last_frames = num_last_frames
         self.memory = ExperienceReplay(
@@ -109,9 +109,8 @@ class DeepQNetworkAgent(AgentBase):
                     action = np.random.randint(env.num_actions)
                 else:
                     # Exploit: take the best known action for this state.
-                    with torch.no_grad():
-                        q = self.model(torch.Tensor(state))
-                    action = np.argmax(q[0]).item()
+                    q = self.model(torch.Tensor(state))
+                    action = np.argmax(q[0].detach()).item()
 
                 # Act on the environment.
                 env.choose_action(action)
@@ -134,13 +133,13 @@ class DeepQNetworkAgent(AgentBase):
                 # Learn on the batch.
                 if batch:
                     inputs, targets = batch
+                    self.optimizer.zero_grad()
                     predictions = self.model(torch.Tensor(inputs))
                     batch_loss = self.loss_fn(predictions, torch.Tensor(targets))
+                    loss += batch_loss
                     # Backpropagation
-                    self.optimizer.zero_grad()
                     batch_loss.backward()
                     self.optimizer.step()
-                    loss += batch_loss
 
             if checkpoint_freq and (episode % checkpoint_freq) == 0:
                 torch.save(self.model, f"dqn-{episode:08d}.model")

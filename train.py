@@ -46,36 +46,24 @@ def create_snake_environment(level_filename):
 
     return Environment(config=env_config, verbose=1)
 
-
-class DQN(nn.Module):
-    def __init__(self, in_channels, num_actions):
-        super(DQN, self).__init__()
-        self.conv1 = nn.Conv2d(
-            in_channels=in_channels, out_channels=16, kernel_size=3, stride=2
-        )
-        self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=1)
-
-        self.fc1 = nn.Linear(in_features=128, out_features=64)
-        self.fc2 = nn.Linear(in_features=64, out_features=num_actions)
-
-        self.relu = nn.ReLU()
-
-    def forward(self, x):
-        x = self.relu(self.conv1(x))
-        x = self.relu(self.conv2(x))
-        x = x.view(x.size(0), -1)
-        x = self.relu(self.fc1(x))
-        x = self.fc2(x)
-        return x
-
-
 def main():
     parsed_args = parse_command_line_args(sys.argv[1:])
     num_last_frames = 4
     env = create_snake_environment(parsed_args.level)
 
+    model = nn.Sequential(
+        nn.Conv2d(num_last_frames, 16, 3),
+        nn.ReLU(),
+        nn.Conv2d(16, 32, 3),
+        nn.ReLU(),
+        nn.Flatten(),
+        nn.Linear(1152, 256),
+        nn.ReLU(),
+        nn.Linear(256, env.num_actions),
+    )
+
     agent = DeepQNetworkAgent(
-        model=DQN(num_last_frames, env.num_actions),
+        model=model,
         env_shape=env.observation_shape,
         num_actions=env.num_actions,
         memory_size=-1,

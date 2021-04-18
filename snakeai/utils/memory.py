@@ -77,8 +77,7 @@ class ExperienceReplay(object):
 
         # Predict future state-action values.
         X = np.concatenate([states, states_next], axis=0)
-        with torch.no_grad():
-            y = model(torch.Tensor(X)).numpy()
+        y = model(torch.Tensor(X)).detach().numpy()
         Q_next = (
             np.max(y[batch_size:], axis=1)
             .repeat(self.num_actions)
