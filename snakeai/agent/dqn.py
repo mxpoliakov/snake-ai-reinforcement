@@ -1,6 +1,9 @@
 import collections
 import numpy as np
 
+import torch
+import torch.nn as nn
+
 from snakeai.agent import AgentBase
 from snakeai.utils.memory import ExperienceReplay
 
@@ -8,26 +11,26 @@ from snakeai.utils.memory import ExperienceReplay
 class DeepQNetworkAgent(AgentBase):
     """ Represents a Snake agent powered by DQN with experience replay. """
 
-    def __init__(self, model, num_last_frames=4, memory_size=1000):
+    def __init__(
+        self, model, env_shape, num_actions, num_last_frames=4, memory_size=1000
+    ):
         """
         Create a new DQN-based agent.
 
         Args:
-            model: a compiled DQN model.
+            model: a DQN model.
+            env_shape (int, int): shape of the environment.
+            num_actions (int): number of actions.
             num_last_frames (int): the number of last frames the agent will consider.
             memory_size (int): memory size limit for experience replay (-1 for unlimited).
         """
-        assert (
-            model.input_shape[-1] == num_last_frames
-        ), "Model input shape should be (grid_size, grid_size, num_frames)"
-        assert (
-            len(model.output_shape) == 2
-        ), "Model output shape should be (num_samples, num_actions)"
-
         self.model = model
+        self.loss_fn = nn.MSELoss()
+        self.optimizer = torch.optim.RMSprop(self.model.parameters())
+
         self.num_last_frames = num_last_frames
         self.memory = ExperienceReplay(
-            model.input_shape[1:], model.output_shape[-1], memory_size
+            (num_last_frames,) + env_shape, num_actions, memory_size
         )
         self.frames = None
 
@@ -51,8 +54,7 @@ class DeepQNetworkAgent(AgentBase):
         else:
             self.frames.append(frame)
             self.frames.popleft()
-        observations = np.expand_dims(self.frames, 0)
-        return np.reshape(observations, (-1,) + self.model.input_shape[1:])
+        return np.expand_dims(self.frames, 0)
 
     def train(
         self,
@@ -107,8 +109,9 @@ class DeepQNetworkAgent(AgentBase):
                     action = np.random.randint(env.num_actions)
                 else:
                     # Exploit: take the best known action for this state.
-                    q = self.model.predict(state)
-                    action = np.argmax(q[0])
+                    with torch.no_grad():
+                        q = self.model(torch.Tensor(state))
+                    action = np.argmax(q[0]).item()
 
                 # Act on the environment.
                 env.choose_action(action)
@@ -131,10 +134,16 @@ class DeepQNetworkAgent(AgentBase):
                 # Learn on the batch.
                 if batch:
                     inputs, targets = batch
-                    loss += float(self.model.train_on_batch(inputs, targets))
+                    predictions = self.model(torch.Tensor(inputs))
+                    batch_loss = self.loss_fn(predictions, torch.Tensor(targets))
+                    # Backpropagation
+                    self.optimizer.zero_grad()
+                    batch_loss.backward()
+                    self.optimizer.step()
+                    loss += batch_loss
 
             if checkpoint_freq and (episode % checkpoint_freq) == 0:
-                self.model.save(f"dqn-{episode:08d}.model")
+                torch.save(self.model, f"dqn-{episode:08d}.model")
 
             if exploration_rate > min_exploration_rate:
                 exploration_rate -= exploration_decay
@@ -155,7 +164,7 @@ class DeepQNetworkAgent(AgentBase):
                 )
             )
 
-        self.model.save("dqn-final.model")
+        torch.save(self.model, "dqn-final.model")
 
     def act(self, observation, reward):
         """
@@ -169,5 +178,7 @@ class DeepQNetworkAgent(AgentBase):
             The index of the action to take next.
         """
         state = self.get_last_frames(observation)
-        q = self.model.predict(state)[0]
-        return np.argmax(q)
+        with torch.no_grad():
+            q = self.model(torch.Tensor(state))
+        action = np.argmax(q[0]).item()
+        return action

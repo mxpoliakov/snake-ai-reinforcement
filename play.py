@@ -5,6 +5,7 @@
 import json
 import sys
 import numpy as np
+import torch
 
 from snakeai.gameplay.environment import Environment
 from snakeai.gui import PyGameGUI
@@ -65,20 +66,17 @@ def create_snake_environment(level_filename):
 
 def load_model(filename):
     """ Load a pre-trained agent model. """
-
-    from keras.models import load_model
-
-    return load_model(filename)
+    return torch.load(filename)
 
 
-def create_agent(name, model):
+def create_agent(name, model, env):
     """
     Create a specific type of Snake AI agent.
 
     Args:
         name (str): key identifying the agent type.
         model: (optional) a pre-trained model required by certain agents.
-
+        env: an instance of Snake environment.
     Returns:
         An instance of Snake agent.
     """
@@ -90,7 +88,13 @@ def create_agent(name, model):
     elif name == "dqn":
         if model is None:
             raise ValueError("A model file is required for a DQN agent.")
-        return DeepQNetworkAgent(model=model, memory_size=-1, num_last_frames=4)
+        return DeepQNetworkAgent(
+            model=model,
+            memory_size=-1,
+            num_last_frames=4,
+            env_shape=env.observation_shape,
+            num_actions=env.num_actions,
+        )
     elif name == "random":
         return RandomActionAgent()
 
@@ -166,7 +170,7 @@ def main():
 
     env = create_snake_environment(parsed_args.level)
     model = load_model(parsed_args.model) if parsed_args.model is not None else None
-    agent = create_agent(parsed_args.agent, model)
+    agent = create_agent(parsed_args.agent, model, env)
 
     run_player = play_cli if parsed_args.interface == "cli" else play_gui
     run_player(env, agent, num_episodes=parsed_args.num_episodes)

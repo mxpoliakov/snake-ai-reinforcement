@@ -1,5 +1,6 @@
 import collections
 import random
+import torch
 
 import numpy as np
 
@@ -76,7 +77,8 @@ class ExperienceReplay(object):
 
         # Predict future state-action values.
         X = np.concatenate([states, states_next], axis=0)
-        y = model.predict(X)
+        with torch.no_grad():
+            y = model(torch.Tensor(X)).numpy()
         Q_next = (
             np.max(y[batch_size:], axis=1)
             .repeat(self.num_actions)
