@@ -5,9 +5,6 @@ LEVEL="snakeai/levels/10x10-blank.json"
 deps:
 	python3 -m pip install --upgrade -r requirements.txt
 
-test:
-	PYTHONPATH=$(PYTHONPATH):. py.test snakeai/tests
-
 train:
 	./train.py --level $(LEVEL) --num-episodes 30000
 
