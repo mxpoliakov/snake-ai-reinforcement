@@ -1,4 +1,4 @@
-# snake-ai-reinforcement
+# Snake AI Reinforcement (PyTorch)
 AI for Snake game trained from pixels using Deep Reinforcement Learning (DQN).
 
 Contains the tools for training and observing the behavior of the agents, either in CLI or GUI mode.
